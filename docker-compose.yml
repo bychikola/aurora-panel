@@ -1,0 +1,92 @@
+version: "3.8"
+
+x-common: &common
+  restart: always
+  networks:
+    - aurora-network
+
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: 100m
+      max-file: 5
+
+x-env: &env
+  env_file: .env
+
+services:
+  # ─── PostgreSQL ───────────────────────────────────────────────
+  aurora-db:
+    image: postgres:17.6
+    container_name: aurora-db
+    hostname: aurora-db
+    <<: [*common, *logging, *env]
+    ports:
+      - 127.0.0.1:6767:5432
+    volumes:
+      - aurora-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 10s
+      retries: 5
+
+  # ─── Valkey (Redis-compatible) ──────────────────────────────
+  aurora-redis:
+    image: valkey/valkey:9-alpine
+    container_name: aurora-redis
+    hostname: aurora-redis
+    <<: [*common, *logging]
+    volumes:
+      - valkey-socket:/var/run/valkey
+    command: >
+      valkey-server --save "" --appendonly no
+      --maxmemory-policy noeviction --loglevel warning
+      --unixsocket /var/run/valkey/valkey.sock
+      --unixsocketperm 777 --port 0
+    healthcheck:
+      test: ["CMD", "valkey-cli", "-s", "/var/run/valkey/valkey.sock", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+
+  # ─── AURORA Panel ───────────────────────────────────────────
+  aurora-panel:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aurora-panel
+    hostname: aurora-panel
+    <<: [*common, *logging, *env]
+    ports:
+      - 127.0.0.1:3000:${APP_PORT:-3000}
+      - 127.0.0.1:3001:${METRICS_PORT:-3001}
+    volumes:
+      - valkey-socket:/var/run/valkey
+      - aurora-configs:/var/lib/aurora/configs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:${METRICS_PORT:-3001}/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      aurora-db:
+        condition: service_healthy
+      aurora-redis:
+        condition: service_healthy
+
+networks:
+  aurora-network:
+    name: aurora-network
+    driver: bridge
+    external: false
+
+volumes:
+  aurora-db-data:
+    name: aurora-db-data
+  valkey-socket:
+    name: valkey-socket
+  aurora-configs:
+    name: aurora-configs

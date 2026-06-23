@@ -1,0 +1,66 @@
+# AURORA Production — Caddy Reverse Proxy
+# Replace your-domain.com with your actual domain
+
+your-domain.com {
+    # Security headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    }
+
+    # Административная панель (Frontend SPA)
+    handle {
+        reverse_proxy aurora-frontend:3333
+    }
+
+    # API endpoint
+    handle /api/* {
+        reverse_proxy aurora-backend:3000
+    }
+
+    # Swagger документация
+    handle /docs {
+        reverse_proxy aurora-backend:3000
+    }
+
+    # Scalar API Reference
+    handle /scalar {
+        reverse_proxy aurora-backend:3000
+    }
+
+    # Prometheus метрики (ограничить по IP)
+    handle /metrics {
+        @internal remote_ip 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+        handle @internal {
+            reverse_proxy aurora-backend:3001
+        }
+        respond 403
+    }
+
+    # Health check
+    handle /health {
+        reverse_proxy aurora-backend:3001
+    }
+
+    # Bull Board UI (ограничить по IP)
+    handle /queues {
+        @internal remote_ip 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+        handle @internal {
+            reverse_proxy aurora-backend:3000
+        }
+        respond 403
+    }
+
+    # Подписки (публичный endpoint — можно кэшировать)
+    handle /api/sub/* {
+        header Cache-Control "public, s-maxage=60, stale-while-revalidate=600"
+        reverse_proxy aurora-backend:3000
+    }
+
+    log {
+        output file /var/log/caddy/aurora.log
+    }
+}
