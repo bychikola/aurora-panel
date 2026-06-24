@@ -11,7 +11,7 @@ COPY frontend_source/package*.json ./
 RUN npm ci --legacy-peer-deps
 
 COPY frontend_source/ ./
-ENV NODE_OPTIONS="--max-old-space-size=4096"
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 RUN npm run start:build
 
 # ─── Stage 2: Backend Build ──────────────────────────────────
