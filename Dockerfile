@@ -11,7 +11,8 @@ COPY frontend_source/package*.json ./
 RUN npm ci --legacy-peer-deps
 
 COPY frontend_source/ ./
-RUN NODE_ENV=production npm run start:build
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+RUN npm run start:build
 
 # ─── Stage 2: Backend Build ──────────────────────────────────
 FROM node:24-trixie-slim AS backend-build
