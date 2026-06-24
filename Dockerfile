@@ -8,7 +8,7 @@ FROM node:24-alpine AS frontend-build
 WORKDIR /app/frontend
 
 COPY frontend_source/package*.json ./
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 COPY frontend_source/ ./
 RUN npm run build
@@ -23,7 +23,7 @@ COPY backend_source/prisma.config.ts ./
 COPY backend_source/patches ./patches
 COPY backend_source/.npmrc ./
 
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 COPY backend_source/ ./
 RUN npm run migrate:generate
