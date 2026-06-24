@@ -1,0 +1,7 @@
+# One-time: build frontend dist for committing to repo
+FROM node:24-alpine
+WORKDIR /app
+COPY frontend_source/ ./
+RUN npm ci --legacy-peer-deps
+RUN npx vite build
+# Output: /app/dist
