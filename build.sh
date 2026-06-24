@@ -1,29 +1,31 @@
 #!/bin/sh
 # ═══════════════════════════════════════════════════════════════
-# AURORA — Build frontend THEN start Docker
+# AURORA — Deploy script
 # ═══════════════════════════════════════════════════════════════
 set -e
 
-echo "=== Step 1: Build Frontend ==="
-cd frontend_source
+echo "=== AURORA Panel Deploy ==="
 
-if [ ! -d "node_modules" ]; then
-    echo "Installing frontend dependencies..."
-    npm ci --legacy-peer-deps
+# Frontend is built automatically by GitHub Actions
+# If you see a placeholder page, go to:
+#   https://github.com/bychikola/aurora-panel/actions
+# And run the "Build Frontend" workflow, then git pull
+
+# Copy .env if not exists
+if [ ! -f ".env" ]; then
+    cp .env.example .env
+    echo "Created .env — please edit it with your values!"
 fi
 
-echo "Building frontend (vite)..."
-NODE_OPTIONS="--max-old-space-size=2048" npx vite build
-
-cd ..
-
 echo ""
-echo "=== Step 2: Start Docker ==="
+echo "=== Starting Docker ==="
 docker compose up -d --build
 
 echo ""
 echo "=== Done! ==="
-echo "API:    http://$(hostname -I | awk '{print $1}'):3000"
-echo "Panel:  http://$(hostname -I | awk '{print $1}'):3000"
 echo ""
-echo "Create admin: docker exec aurora-panel npx prisma db seed"
+echo "Create admin user:"
+echo "  docker exec aurora-panel npx prisma db seed"
+echo ""
+echo "If frontend shows placeholder — run 'Build Frontend' workflow at:"
+echo "  https://github.com/bychikola/aurora-panel/actions"
