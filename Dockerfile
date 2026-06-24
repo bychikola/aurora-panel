@@ -11,7 +11,7 @@ COPY frontend_source/package*.json ./
 RUN npm ci --legacy-peer-deps
 
 COPY frontend_source/ ./
-RUN npm run build
+RUN NODE_ENV=production npm run start:build
 
 # ─── Stage 2: Backend Build ──────────────────────────────────
 FROM node:24-trixie-slim AS backend-build
