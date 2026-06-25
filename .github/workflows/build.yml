@@ -30,7 +30,7 @@ jobs:
         working-directory: backend_source
         run: |
           npm ci --legacy-peer-deps
-          npm run generate
+          npm run migrate:generate
           npm run build
           npm prune --omit=dev
 
