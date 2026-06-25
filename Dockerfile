@@ -22,6 +22,7 @@ RUN if [ ! -f frontend_temp/dist/index.html ]; then \
 FROM node:24.14-trixie-slim AS backend-build
 WORKDIR /opt/app
 
+ENV NODE_OPTIONS="--max-old-space-size=1400"
 ENV PRISMA_CLI_BINARY_TARGETS=debian-openssl-3.0.x,linux-arm64-openssl-3.0.x
 
 COPY backend_source/package*.json ./
@@ -53,7 +54,7 @@ WORKDIR /opt/app
 ENV PRISMA_HIDE_UPDATE_MESSAGE=true
 ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
 ENV PM2_DISABLE_VERSION_CHECK=true
-ENV NODE_OPTIONS="--max-old-space-size=16384"
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
