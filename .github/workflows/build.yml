@@ -1,0 +1,43 @@
+name: Build Frontend + Backend
+
+on:
+  push:
+    branches: [master]
+    paths: ['frontend_source/**', 'backend_source/**']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # ── Build Frontend ──────────────────────────────────────
+      - name: Build Frontend
+        working-directory: frontend_source
+        run: |
+          npm ci --legacy-peer-deps
+          npx vite build
+
+      # ── Build Backend ──────────────────────────────────────
+      - name: Build Backend
+        working-directory: backend_source
+        run: |
+          npm ci --legacy-peer-deps
+          npm run generate
+          npm run build
+          npm prune --omit=dev
+
+      # ── Commit built output ────────────────────────────────
+      - name: Commit built dist
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add -f frontend_source/dist/ backend_source/dist/
+          git diff --cached --quiet || (git commit -m "[ci] Build frontend + backend" && git push)
